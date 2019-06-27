@@ -83,7 +83,7 @@ public class MediaPlayerService extends Service implements
 
     @Override
     public void onAudioFocusChange(int focusState) {
-        switch() {
+        switch(focusState) {
             case AudioManager.AUDIOFOCUS_GAIN:
                 // The service gained audio focus, so it needs to start playing
                 Log.d(TAG, "AUDIOFOCUS_GAIN: Resume playback");
@@ -96,7 +96,7 @@ public class MediaPlayerService extends Service implements
                 mediaPlayer.release();
                 mediaPlayer = null;
                 break;
-            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
                 // The service lost audio focus for a short time, so pause playback
                 Log.d(TAG, "AUDIOFOCUS_LOSS_TRANSIENT: Pause playback");
                 if (mediaPlayer.isPlaying()) mediaPlayer.pause();
@@ -147,6 +147,30 @@ public class MediaPlayerService extends Service implements
     @Override
     public void onSeekComplete(MediaPlayer mediaPlayer) {
 
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        try {
+            mediaFile = intent.getExtras().getString("media");
+        } catch (NullPointerException e) {
+            stopSelf();
+        }
+
+        if (requestAudioFocus() == false)  stopSelf();
+        if (mediaFile != null && mediaFile != "") initMediaPlayer();
+
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if(mediaPlayer != null) {
+            stopMedia();
+            mediaPlayer.release();
+        }
+        removeAudioFocus();
     }
 
     public class LocalBinder extends Binder {
